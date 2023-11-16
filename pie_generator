@@ -1,4 +1,4 @@
-Sub CreatePieChartsInRows()
+Sub CreatePieChartsForRow()
     Dim ws As Worksheet
     Set ws = ActiveSheet
 
@@ -7,63 +7,57 @@ Sub CreatePieChartsInRows()
     Dim chtTop As Long ' 图表顶部位置
     Dim chartIndex As Integer
 
-    chtTop = 10
-    chartIndex = 0
+    chtTop = 10 ' 初始顶部位置
+    chartIndex = 0 ' 图表索引
 
-    For r = 1 To 8 ' 假设数据在前8行
+    For r = 1 To 8
         Dim normalDays As Long, abnormalDays As Long, consecutiveZeros As Long
-        Dim maxConsecutiveZeros As Long, cellValue As Variant
+        Dim maxConsecutiveZeros As Long, cell As Range
 
         normalDays = 0
         abnormalDays = 0
         consecutiveZeros = 0
         maxConsecutiveZeros = 0
 
-        ' 统计每行中1和0的数量，忽略"Weekend"
+        ' 统计每行中1和0的数量，计算连续0的最大数量
         For Each cell In ws.Rows(r).Cells
-            cellValue = cell.Value
-            If IsNumeric(cellValue) Then
-                If cellValue = 1 Then
-                    normalDays = normalDays + 1
-                    consecutiveZeros = 0
-                ElseIf cellValue = 0 Then
-                    abnormalDays = abnormalDays + 1
-                    consecutiveZeros = consecutiveZeros + 1
-                    If consecutiveZeros > maxConsecutiveZeros Then
-                        maxConsecutiveZeros = consecutiveZeros
-                    End If
+            If cell.Value = 1 Then
+                normalDays = normalDays + 1
+                consecutiveZeros = 0
+            ElseIf cell.Value = 0 Then
+                abnormalDays = abnormalDays + 1
+                consecutiveZeros = consecutiveZeros + 1
+                If consecutiveZeros > maxConsecutiveZeros Then
+                    maxConsecutiveZeros = consecutiveZeros
                 End If
             End If
         Next cell
 
         ' 创建饼图
-        chtLeft = 10 + chartIndex * 150 ' 设置每个饼图的左侧位置
+        chtLeft = 10 + chartIndex * 150 ' 计算图表左侧位置
         chartIndex = chartIndex + 1
-
-        If chartIndex = 4 Then
-            chtTop = chtTop + 250 ' 第二行饼图的顶部位置
-            chartIndex = 0 ' 重置图表索引
+        If chartIndex = 4 Then ' 每4个饼图换行
+            chtTop = chtTop + 250
+            chartIndex = 0
         End If
 
-        ' 仅当该行有1或0时才创建饼图
-        If normalDays > 0 Or abnormalDays > 0 Then
-            Dim cht As ChartObject
-            Set cht = ws.ChartObjects.Add(Left:=chtLeft, Width:=140, Top:=chtTop, Height:=225)
-            With cht.Chart
-                .ChartType = xlPie
-                .SeriesCollection.NewSeries
-                .SeriesCollection(1).Values = Array(normalDays, abnormalDays)
-                .SeriesCollection(1).XValues = Array("Normal", "Abnormal")
+        ' 创建饼图对象
+        Dim cht As ChartObject
+        Set cht = ws.ChartObjects.Add(Left:=chtLeft, Width:=140, Top:=chtTop, Height:=225)
+        With cht.Chart
+            .ChartType = xlPie
+            .SeriesCollection.NewSeries
+            .SeriesCollection(1).Values = Array(normalDays, abnormalDays)
+            .SeriesCollection(1).XValues = Array("Normal", "Abnormal")
 
-                ' 如果连续超过3个0，为0部分添加边框
-                If maxConsecutiveZeros > 3 Then
-                    With .SeriesCollection(1).Points(2).Format.Line
-                        .Visible = msoTrue
-                        .ForeColor.RGB = RGB(255, 0, 0) ' 红色
-                        .Weight = 2 ' 边框宽度
-                    End With
-                End If
-            End With
-        End If
+            ' 如果连续超过3个0，为0部分添加红色边框
+            If maxConsecutiveZeros > 3 Then
+                With .SeriesCollection(1).Points(2).Format.Line
+                    .Visible = msoTrue
+                    .ForeColor.RGB = RGB(255, 0, 0) ' 红色
+                    .Weight = 2 ' 边框宽度
+                End With
+            End If
+        End With
     Next r
 End Sub
