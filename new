@@ -1,0 +1,55 @@
+Sub CreatePieChartsForRow()
+    Dim ws As Worksheet
+    Set ws = ActiveSheet
+
+    Dim lastRow As Long
+    lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+
+    Dim r As Long ' 行号
+    Dim chtTop As Long ' 图表顶部位置
+    chtTop = 50
+
+    For r = 2 To lastRow
+        ' 检查行中是否包含 "Weekend"
+        If Not IsRowWeekend(ws.Rows(r)) Then
+            Dim normalDays As Long, abnormalDays As Long
+            CountValues ws.Rows(r), normalDays, abnormalDays
+
+            ' 在此处生成饼图
+            Dim cht As ChartObject
+            Set cht = ws.ChartObjects.Add(Left:=100, Width:=375, Top:=chtTop, Height:=225)
+            With cht.Chart
+                .ChartType = xlPie
+                .SeriesCollection.NewSeries
+                .SeriesCollection(1).Values = Array(normalDays, abnormalDays)
+                .SeriesCollection(1).XValues = Array("Normal", "Abnormal")
+                ' ... 其他图表格式化代码 ...
+            End With
+
+            chtTop = chtTop + 250 ' 调整下一个图表的顶部位置
+        End If
+    Next r
+End Sub
+
+Function IsRowWeekend(row As Range) As Boolean
+    Dim cell As Range
+    For Each cell In row.Cells
+        If cell.Value = "Weekend" Then
+            IsRowWeekend = True
+            Exit Function
+        End If
+    Next cell
+End Function
+
+Sub CountValues(row As Range, ByRef normalDays As Long, ByRef abnormalDays As Long)
+    Dim cell As Range
+    For Each cell In row.Cells
+        If IsNumeric(cell.Value) Then
+            If cell.Value = 1 Then
+                normalDays = normalDays + 1
+            Else
+                abnormalDays = abnormalDays + 1
+            End If
+        End If
+    Next cell
+End Sub
