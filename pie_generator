@@ -1,41 +1,39 @@
-Sub CreateTwoRowsOfPieCharts()
+Sub CreatePieChartsForRow()
     Dim ws As Worksheet
     Set ws = ActiveSheet
 
     Dim r As Long ' 行号
-    Dim c As Integer ' 饼图列号
-    Dim chtLeft As Long ' 图表左侧位置
+    Dim chartCount As Integer ' 计数器，用于每行的图表布局
     Dim chtTop As Long ' 图表顶部位置
-    chtTop = 10
+    Dim chtLeft As Long ' 图表左侧位置
 
     For r = 1 To 8
         Dim normalDays As Long, abnormalDays As Long, consecutiveZeros As Long
         Dim maxConsecutiveZeros As Long, currentCell As Range
 
-        consecutiveZeros = 0
-        maxConsecutiveZeros = 0
         normalDays = 0
         abnormalDays = 0
+        consecutiveZeros = 0
+        maxConsecutiveZeros = 0
+        chartCount = (r - 1) Mod 4 ' 每4个图表换行
 
-        ' 统计每行中1和0的数量，忽略"Weekend"
+        ' 计算1和0的数量，连续0的最大数量
         For Each currentCell In ws.Rows(r).Cells
-            If IsNumeric(currentCell.Value) Then
-                If currentCell.Value = 1 Then
-                    normalDays = normalDays + 1
-                    consecutiveZeros = 0
-                Else
-                    abnormalDays = abnormalDays + 1
-                    consecutiveZeros = consecutiveZeros + 1
-                    If consecutiveZeros > maxConsecutiveZeros Then
-                        maxConsecutiveZeros = consecutiveZeros
-                    End If
+            If currentCell.Value = 1 Then
+                normalDays = normalDays + 1
+                consecutiveZeros = 0
+            ElseIf currentCell.Value = 0 Then
+                abnormalDays = abnormalDays + 1
+                consecutiveZeros = consecutiveZeros + 1
+                If consecutiveZeros > maxConsecutiveZeros Then
+                    maxConsecutiveZeros = consecutiveZeros
                 End If
             End If
         Next currentCell
 
-        ' 生成饼图
-        chtLeft = 10 + (r - 1) Mod 4 * 150 ' 设置图表左侧位置
-        If r = 5 Then chtTop = 300 ' 第二行图表的顶部位置
+        ' 为每行创建饼图
+        chtTop = 50 + Int((r - 1) / 4) * 250 ' 每4行改变顶部位置
+        chtLeft = 100 + chartCount * 150 ' 改变左侧位置以避免重叠
 
         Dim cht As ChartObject
         Set cht = ws.ChartObjects.Add(Left:=chtLeft, Width:=140, Top:=chtTop, Height:=225)
@@ -45,13 +43,15 @@ Sub CreateTwoRowsOfPieCharts()
             .SeriesCollection(1).Values = Array(normalDays, abnormalDays)
             .SeriesCollection(1).XValues = Array("Normal", "Abnormal")
 
-            ' 如果连续0超过3个，给0部分加边框
+            ' 如果连续超过3个0，为0部分添加边框
             If maxConsecutiveZeros > 3 Then
                 With .SeriesCollection(1).Points(2).Format.Line
                     .Visible = msoTrue
                     .ForeColor.RGB = RGB(255, 0, 0) ' 红色
                     .Weight = 2 ' 边框宽度
                 End With
+            Else
+                .SeriesCollection(1).Points(2).Format.Line.Visible = msoFalse
             End If
         End With
     Next r
