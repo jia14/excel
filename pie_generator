@@ -1,11 +1,17 @@
-Sub CreatePieChartsForRow()
+Sub CreatePieChartsInRows()
     Dim ws As Worksheet
     Set ws = ActiveSheet
 
+    Dim lastRow As Long
+    lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+
     Dim r As Long ' 行号
-    Dim chartCount As Integer ' 计数器，用于每行的图表布局
-    Dim chtTop As Long ' 图表顶部位置
     Dim chtLeft As Long ' 图表左侧位置
+    Dim chtTop As Long ' 图表顶部位置
+    Dim chartIndex As Integer
+
+    chtTop = 10
+    chartIndex = 0
 
     For r = 1 To 8
         Dim normalDays As Long, abnormalDays As Long, consecutiveZeros As Long
@@ -15,9 +21,8 @@ Sub CreatePieChartsForRow()
         abnormalDays = 0
         consecutiveZeros = 0
         maxConsecutiveZeros = 0
-        chartCount = (r - 1) Mod 4 ' 每4个图表换行
 
-        ' 计算1和0的数量，连续0的最大数量
+        ' 统计每行中1和0的数量，忽略"Weekend"
         For Each currentCell In ws.Rows(r).Cells
             If currentCell.Value = 1 Then
                 normalDays = normalDays + 1
@@ -32,8 +37,13 @@ Sub CreatePieChartsForRow()
         Next currentCell
 
         ' 为每行创建饼图
-        chtTop = 50 + Int((r - 1) / 4) * 250 ' 每4行改变顶部位置
-        chtLeft = 100 + chartCount * 150 ' 改变左侧位置以避免重叠
+        chtLeft = 10 + chartIndex * 150 ' 设置每个饼图的左侧位置
+        chartIndex = chartIndex + 1
+
+        If chartIndex = 4 Then
+            chtTop = chtTop + 250 ' 改变顶部位置以开始新的一行
+            chartIndex = 0 ' 重置图表索引
+        End If
 
         Dim cht As ChartObject
         Set cht = ws.ChartObjects.Add(Left:=chtLeft, Width:=140, Top:=chtTop, Height:=225)
@@ -50,8 +60,6 @@ Sub CreatePieChartsForRow()
                     .ForeColor.RGB = RGB(255, 0, 0) ' 红色
                     .Weight = 2 ' 边框宽度
                 End With
-            Else
-                .SeriesCollection(1).Points(2).Format.Line.Visible = msoFalse
             End If
         End With
     Next r
