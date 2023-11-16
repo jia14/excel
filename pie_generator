@@ -1,55 +1,61 @@
-Sub CreatePieChartsForRow()
+Sub CreatePieChartsBasedOnData()
     Dim ws As Worksheet
     Set ws = ActiveSheet
-
-    Dim lastRow As Long
-    lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
 
     Dim r As Long ' 行号
     Dim chtTop As Long ' 图表顶部位置
     chtTop = 50
 
-    For r = 2 To lastRow
-        ' 检查行中是否包含 "Weekend"
-        If Not IsRowWeekend(ws.Rows(r)) Then
-            Dim normalDays As Long, abnormalDays As Long
-            CountValues ws.Rows(r), normalDays, abnormalDays
+    ' 遍历前4行和后4行（共8行）
+    For r = 1 To 8
+        Dim normalDays As Long, abnormalDays As Long, consecutiveZeros As Long
+        Dim maxConsecutiveZeros As Long, currentCell As Range
 
-            ' 在此处生成饼图
-            Dim cht As ChartObject
-            Set cht = ws.ChartObjects.Add(Left:=100, Width:=375, Top:=chtTop, Height:=225)
-            With cht.Chart
-                .ChartType = xlPie
-                .SeriesCollection.NewSeries
-                .SeriesCollection(1).Values = Array(normalDays, abnormalDays)
-                .SeriesCollection(1).XValues = Array("Normal", "Abnormal")
-                ' ... 其他图表格式化代码 ...
-            End With
+        consecutiveZeros = 0
+        maxConsecutiveZeros = 0
+        normalDays = 0
+        abnormalDays = 0
 
-            chtTop = chtTop + 250 ' 调整下一个图表的顶部位置
+        ' 统计每行中1和0的数量，忽略"Weekend"
+        For Each currentCell In ws.Rows(r).Cells
+            If IsNumeric(currentCell.Value) Then
+                If currentCell.Value = 1 Then
+                    normalDays = normalDays + 1
+                    consecutiveZeros = 0
+                Else
+                    abnormalDays = abnormalDays + 1
+                    consecutiveZeros = consecutiveZeros + 1
+                    If consecutiveZeros > maxConsecutiveZeros Then
+                        maxConsecutiveZeros = consecutiveZeros
+                    End If
+                End If
+            End If
+        Next currentCell
+
+        ' 生成饼图
+        Dim cht As ChartObject
+        Set cht = ws.ChartObjects.Add(Left:=100, Width:=375, Top:=chtTop, Height:=225)
+        With cht.Chart
+            .ChartType = xlPie
+            .SeriesCollection.NewSeries
+            .SeriesCollection(1).Values = Array(normalDays, abnormalDays)
+            .SeriesCollection(1).XValues = Array("Normal", "Abnormal")
+
+            ' 如果连续0超过3个，给0部分加边框
+            If maxConsecutiveZeros > 3 Then
+                With .SeriesCollection(1).Points(2).Format.Line
+                    .Visible = msoTrue
+                    .ForeColor.RGB = RGB(255, 0, 0) ' 红色
+                    .Weight = 2 ' 边框宽度
+                End With
+            End If
+        End With
+
+        ' 调整下一个图表的顶部位置
+        If r = 4 Then
+            chtTop = 550 ' 调整为下半部分的起始位置
+        Else
+            chtTop = chtTop + 250 ' 调整为下一个图表的顶部位置
         End If
     Next r
-End Sub
-
-Function IsRowWeekend(row As Range) As Boolean
-    Dim cell As Range
-    For Each cell In row.Cells
-        If cell.Value = "Weekend" Then
-            IsRowWeekend = True
-            Exit Function
-        End If
-    Next cell
-End Function
-
-Sub CountValues(row As Range, ByRef normalDays As Long, ByRef abnormalDays As Long)
-    Dim cell As Range
-    For Each cell In row.Cells
-        If IsNumeric(cell.Value) Then
-            If cell.Value = 1 Then
-                normalDays = normalDays + 1
-            Else
-                abnormalDays = abnormalDays + 1
-            End If
-        End If
-    Next cell
 End Sub
