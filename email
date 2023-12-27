@@ -59,30 +59,40 @@ Sub AddActionButton(ws As Worksheet, rowNumber As Long, colNumber As Long, statu
 End Sub
 
 Sub ActionButton_Click()
-    ' Send an email based on the button clicked
-    Dim clickedButton As Button
+    ' 处理按钮点击事件
+    Dim clickedButton As Object
+    On Error Resume Next ' 开始错误处理
+
+    ' 尝试获取点击的按钮
     Set clickedButton = ActiveSheet.Buttons(Application.Caller)
+    
+    If clickedButton Is Nothing Then
+        MsgBox "The button was not found.", vbExclamation, "Button Error"
+        Exit Sub ' 如果没有找到按钮则退出子程序
+    End If
+    
+    On Error GoTo 0 ' 停止错误处理
+
+    ' 从按钮名称获取行号和状态
     Dim buttonNameParts() As String
     buttonNameParts = Split(clickedButton.Name, "_")
     
-    ' Get row number and status from the button's name
     Dim rowNumber As Long
     Dim statusValue As String
     rowNumber = CInt(buttonNameParts(1))
     statusValue = buttonNameParts(2)
 
-    ' Determine action based on status
+    ' 根据状态确定操作
     Select Case statusValue
         Case "Expire"
-            SendEmail ActiveSheet.Cells(rowNumber, 2).Value, ActiveSheet.Cells(rowNumber, 3).Value, _
-                      "Your application status", "Hi " & ActiveSheet.Cells(rowNumber, 2).Value & "," & vbNewLine & "XXXXX"
+            ' ... 你的发送邮件代码 ...
         Case "exam passed/waived"
-            SendEmail ActiveSheet.Cells(rowNumber, 2).Value, ActiveSheet.Cells(rowNumber, 3).Value, _
-                      "Eurex Template user", "Hi " & ActiveSheet.Cells(rowNumber, 2).Value & "," & vbNewLine & "can you please offer me a template user?"
+            ' ... 你的发送邮件代码 ...
         Case "IT setup"
-            SendEmailWithImage ActiveSheet.Cells(rowNumber, 2).Value, ActiveSheet.Cells(rowNumber, 3).Value
+            ' ... 你的发送邮件代码 ...
     End Select
 End Sub
+
 
 Sub SendEmail(FirstName As String, EmailAddress As String, Subject As String, Body As String)
     ' Send an email with the given subject and body
