@@ -40,7 +40,8 @@ Sub AddActionButton(ws As Worksheet, rowNumber As Long, colNumber As Long, statu
     ' 在指定单元格旁添加按钮
     Dim btn As Button
     Application.ScreenUpdating = False
-    ' 删除已存在的按钮
+    
+    ' 删除同一单元格中已存在的按钮，避免重复
     Dim existingButton As Button
     For Each existingButton In ws.Buttons
         If Not Intersect(existingButton.TopLeftCell, ws.Cells(rowNumber, colNumber)) Is Nothing Then
@@ -48,11 +49,17 @@ Sub AddActionButton(ws As Worksheet, rowNumber As Long, colNumber As Long, statu
         End If
     Next existingButton
     
+    ' 计算按钮的位置和尺寸
+    Dim left As Double, top As Double, width As Double, height As Double
+    With ws.Cells(rowNumber, colNumber)
+        left = .Left
+        top = .Top
+        width = .Width
+        height = .Height
+    End With
+    
     ' 添加新按钮
-    Set btn = ws.Buttons.Add(ws.Cells(rowNumber, colNumber).Left, _
-                             ws.Cells(rowNumber, colNumber).Top, _
-                             ws.Cells(rowNumber, colNumber).Width, _
-                             ws.Cells(rowNumber, colNumber).Height)
+    Set btn = ws.Buttons.Add(left, top, width, height)
     With btn
         .Caption = "Send Email"
         .OnAction = "ActionButton_Click"
@@ -60,6 +67,7 @@ Sub AddActionButton(ws As Worksheet, rowNumber As Long, colNumber As Long, statu
     End With
     Application.ScreenUpdating = True
 End Sub
+
 
 Sub ActionButton_Click()
     ' 处理按钮点击事件
