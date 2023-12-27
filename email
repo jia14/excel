@@ -107,7 +107,12 @@ Sub ActionButton_Click()
     Select Case statusValue
         Case "Expire"
             SendEmail ActiveSheet.Cells(rowNumber, 2).Value, ActiveSheet.Cells(rowNumber, 3).Value, _
-                      "Your application status", "Hi " & ActiveSheet.Cells(rowNumber, 2).Value & "," & vbNewLine & "XXXXX"
+                      "Your application status", "Hi " & FirstName & ",<br><br>" & _
+                "I noticed you probably didn't take actions after receiving a link from Eurex, it probably has expired. " & _
+                "Could you please check if it has expired? If so, please start a new ARP request for Eurex.<br><br>" & _
+                "Thank you!<br><br>" & _
+                "Best regards,<br>" & _
+                "Jia"
         Case "exam passed/waived"
             SendEmail ActiveSheet.Cells(rowNumber, 2).Value, ActiveSheet.Cells(rowNumber, 3).Value, _
                       "Eurex Template user", "Hi " & ActiveSheet.Cells(rowNumber, 2).Value & "," & vbNewLine & "can you please offer me a template user?"
