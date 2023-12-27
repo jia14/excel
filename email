@@ -1,7 +1,7 @@
 Sub SetUpDropdowns()
-    ' Add dropdowns to the status column
+    ' 在状态列添加下拉列表
     Dim cell As Range
-    For Each cell In Range("D2:D100") ' Adjust the range according to your actual data
+    For Each cell In Range("D2:D100") ' 根据实际数据调整范围
         With cell.Validation
             .Delete
             .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Operator:= _
@@ -12,19 +12,22 @@ Sub SetUpDropdowns()
             .ShowError = True
         End With
     Next cell
+
+    ' 添加用于触发 CheckStatusAndAddButtons 的按钮
+    AddTriggerButton
 End Sub
 
 Sub CheckStatusAndAddButtons()
-    ' Check the status column and add buttons for "Expire", "exam passed/waived", and "IT setup"
-    Const statusCol As Integer = 4 ' Column D for status
-    Const actionCol As Integer = 7 ' Column G for action
+    ' 根据状态列的值添加按钮
+    Const statusCol As Integer = 4 ' 状态在第四列 (D)
+    Const actionCol As Integer = 7 ' 操作在第七列 (G)
     Dim ws As Worksheet
     Set ws = ActiveSheet
     Dim lastRow As Long
     lastRow = ws.Cells(ws.Rows.Count, statusCol).End(xlUp).Row
     
     Dim i As Long
-    For i = 2 To lastRow ' Assuming data starts on row 2
+    For i = 2 To lastRow ' 假设数据从第二行开始
         Dim statusValue As String
         statusValue = ws.Cells(i, statusCol).Value
         If statusValue = "Expire" Or statusValue = "exam passed/waived" Or statusValue = "IT setup" Then
@@ -34,10 +37,10 @@ Sub CheckStatusAndAddButtons()
 End Sub
 
 Sub AddActionButton(ws As Worksheet, rowNumber As Long, colNumber As Long, statusValue As String)
-    ' Add a button to the worksheet for the specified status
+    ' 在指定单元格旁添加按钮
     Dim btn As Button
     Application.ScreenUpdating = False
-    ' Delete existing button if present
+    ' 删除已存在的按钮
     Dim existingButton As Button
     For Each existingButton In ws.Buttons
         If Not Intersect(existingButton.TopLeftCell, ws.Cells(rowNumber, colNumber)) Is Nothing Then
@@ -45,7 +48,7 @@ Sub AddActionButton(ws As Worksheet, rowNumber As Long, colNumber As Long, statu
         End If
     Next existingButton
     
-    ' Add new button
+    ' 添加新按钮
     Set btn = ws.Buttons.Add(ws.Cells(rowNumber, colNumber).Left, _
                              ws.Cells(rowNumber, colNumber).Top, _
                              ws.Cells(rowNumber, colNumber).Width, _
@@ -59,8 +62,9 @@ Sub AddActionButton(ws As Worksheet, rowNumber As Long, colNumber As Long, statu
 End Sub
 
 Sub ActionButton_Click()
+    ' 处理按钮点击事件
     Dim clickedButton As Object
-    Dim clickedButtonName As Variant ' 使用 Variant 类型以处理不同类型的返回值
+    Dim clickedButtonName As Variant
 
     clickedButtonName = Application.Caller
 
@@ -91,17 +95,18 @@ Sub ActionButton_Click()
     ' 根据状态确定操作
     Select Case statusValue
         Case "Expire"
-            ' ... 发送邮件的代码 ...
+            SendEmail ActiveSheet.Cells(rowNumber, 2).Value, ActiveSheet.Cells(rowNumber, 3).Value, _
+                      "Your application status", "Hi " & ActiveSheet.Cells(rowNumber, 2).Value & "," & vbNewLine & "XXXXX"
         Case "exam passed/waived"
-            ' ... 发送邮件的代码 ...
+            SendEmail ActiveSheet.Cells(rowNumber, 2).Value, ActiveSheet.Cells(rowNumber, 3).Value, _
+                      "Eurex Template user", "Hi " & ActiveSheet.Cells(rowNumber, 2).Value & "," & vbNewLine & "can you please offer me a template user?"
         Case "IT setup"
-            ' ... 发送邮件的代码 ...
+            SendEmailWithImage ActiveSheet.Cells(rowNumber, 2).Value, ActiveSheet.Cells(rowNumber, 3).Value
     End Select
 End Sub
 
-
 Sub SendEmail(FirstName As String, EmailAddress As String, Subject As String, Body As String)
-    ' Send an email with the given subject and body
+    ' 发送邮件
     Dim OutApp As Object
     Dim OutMail As Object
     Set OutApp = CreateObject("Outlook.Application")
@@ -114,7 +119,7 @@ Sub SendEmail(FirstName As String, EmailAddress As String, Subject As String, Bo
         .BCC = ""
         .Subject = Subject
         .HTMLBody = "<html><body><p>" & Replace(Body, vbNewLine, "<br>") & "</p></body></html>"
-        .Send   ' Or use .Display to review the email before sending
+        .Send   ' 或使用 .Display 来审查邮件
     End With
     On Error GoTo 0
     
@@ -123,14 +128,14 @@ Sub SendEmail(FirstName As String, EmailAddress As String, Subject As String, Bo
 End Sub
 
 Sub SendEmailWithImage(FirstName As String, EmailAddress As String)
-    ' Send an email with an image attachment
+    ' 发送带图片的邮件
     Dim OutApp As Object
     Dim OutMail As Object
     Set OutApp = CreateObject("Outlook.Application")
     Set OutMail = OutApp.CreateItem(0)
     
     Dim imageFilePath As String
-    imageFilePath = "C:\Path\To\Image.jpg" ' Replace with the path to your image file
+    imageFilePath = "C:\Path\To\Image.jpg" ' 替换为图片文件的路径
     
     On Error Resume Next
     With OutMail
@@ -140,10 +145,20 @@ Sub SendEmailWithImage(FirstName As String, EmailAddress As String)
         .Subject = "IT Setup Required"
         .HTMLBody = "<html><body><p>Hi " & FirstName & ",</p><p>Please see the attached image for details.</p></body></html>"
         .Attachments.Add imageFilePath
-        .Send   ' Or use .Display to review the email before sending
+        .Send   ' 或使用 .Display 来审查邮件
     End With
     On Error GoTo 0
     
     Set OutMail = Nothing
     Set OutApp = Nothing
+End Sub
+
+Sub AddTriggerButton()
+    ' 添加用于触发 CheckStatusAndAddButtons 的按钮
+    Dim triggerBtn As Button
+    Set triggerBtn = ActiveSheet.Buttons.Add(100, 10, 100, 30)
+    With triggerBtn
+        .Caption = "Update Buttons"
+        .OnAction = "CheckStatusAndAddButtons"
+    End With
 End Sub
