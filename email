@@ -59,35 +59,44 @@ Sub AddActionButton(ws As Worksheet, rowNumber As Long, colNumber As Long, statu
 End Sub
 
 Sub ActionButton_Click()
-    ' 处理按钮点击事件
-    Dim btn As Object
-    Dim clickedButtonName As String
+    Dim clickedButton As Object
+    Dim clickedButtonName As Variant ' 使用 Variant 类型以处理不同类型的返回值
+
     clickedButtonName = Application.Caller
 
-    ' 遍历所有按钮，找到被点击的按钮
-    For Each btn In ActiveSheet.Buttons
-        If btn.Name = clickedButtonName Then
-            ' 从按钮名称获取行号和状态
-            Dim buttonNameParts() As String
-            buttonNameParts = Split(btn.Name, "_")
+    ' 检查 Application.Caller 是否返回了字符串
+    If Not VarType(clickedButtonName) = vbString Then
+        MsgBox "This macro was not called by a button.", vbExclamation, "Button Error"
+        Exit Sub
+    End If
 
-            Dim rowNumber As Long
-            Dim statusValue As String
-            rowNumber = CInt(buttonNameParts(1))
-            statusValue = buttonNameParts(2)
+    ' 尝试获取工作表上的按钮
+    On Error Resume Next
+    Set clickedButton = ActiveSheet.Buttons(clickedButtonName)
+    If clickedButton Is Nothing Then
+        MsgBox "Button not found.", vbExclamation, "Button Error"
+        Exit Sub
+    End If
+    On Error GoTo 0
 
-            ' 根据状态确定操作
-            Select Case statusValue
-                Case "Expire"
-                    ' ... 你的发送邮件代码 ...
-                Case "exam passed/waived"
-                    ' ... 你的发送邮件代码 ...
-                Case "IT setup"
-                    ' ... 你的发送邮件代码 ...
-            End Select
-            Exit For ' 找到按钮后退出循环
-        End If
-    Next btn
+    ' 从按钮名称获取行号和状态
+    Dim buttonNameParts() As String
+    buttonNameParts = Split(clickedButton.Name, "_")
+
+    Dim rowNumber As Long
+    Dim statusValue As String
+    rowNumber = CInt(buttonNameParts(1))
+    statusValue = buttonNameParts(2)
+
+    ' 根据状态确定操作
+    Select Case statusValue
+        Case "Expire"
+            ' ... 发送邮件的代码 ...
+        Case "exam passed/waived"
+            ' ... 发送邮件的代码 ...
+        Case "IT setup"
+            ' ... 发送邮件的代码 ...
+    End Select
 End Sub
 
 
