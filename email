@@ -66,6 +66,9 @@ Sub AddActionButton(ws As Worksheet, rowNumber As Long, colNumber As Long, statu
         .Name = "ActionBtn_" & rowNumber & "_" & statusValue
     End With
     Application.ScreenUpdating = True
+
+    ' 显示调试信息，确认按钮是否已被添加
+    MsgBox "Added button at Row: " & rowNumber & ", Column: " & colNumber & ", for Status: " & statusValue
 End Sub
 
 
