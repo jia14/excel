@@ -1,0 +1,133 @@
+Sub SetUpDropdowns()
+    ' Add dropdowns to the status column
+    Dim cell As Range
+    For Each cell In Range("D2:D100") ' Adjust the range according to your actual data
+        With cell.Validation
+            .Delete
+            .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Operator:= _
+            xlBetween, Formula1:="application started,In process of DBG,Draft,Expire,exam passed/waived,IT setup,Admission,person ask if I need exam"
+            .IgnoreBlank = True
+            .InCellDropdown = True
+            .ShowInput = True
+            .ShowError = True
+        End With
+    Next cell
+End Sub
+
+Sub CheckStatusAndAddButtons()
+    ' Check the status column and add buttons for "Expire", "exam passed/waived", and "IT setup"
+    Const statusCol As Integer = 4 ' Column D for status
+    Const actionCol As Integer = 7 ' Column G for action
+    Dim ws As Worksheet
+    Set ws = ActiveSheet
+    Dim lastRow As Long
+    lastRow = ws.Cells(ws.Rows.Count, statusCol).End(xlUp).Row
+    
+    Dim i As Long
+    For i = 2 To lastRow ' Assuming data starts on row 2
+        Dim statusValue As String
+        statusValue = ws.Cells(i, statusCol).Value
+        If statusValue = "Expire" Or statusValue = "exam passed/waived" Or statusValue = "IT setup" Then
+            AddActionButton ws, i, actionCol, statusValue
+        End If
+    Next i
+End Sub
+
+Sub AddActionButton(ws As Worksheet, rowNumber As Long, colNumber As Long, statusValue As String)
+    ' Add a button to the worksheet for the specified status
+    Dim btn As Button
+    Application.ScreenUpdating = False
+    ' Delete existing button if present
+    Dim existingButton As Button
+    For Each existingButton In ws.Buttons
+        If Not Intersect(existingButton.TopLeftCell, ws.Cells(rowNumber, colNumber)) Is Nothing Then
+            existingButton.Delete
+        End If
+    Next existingButton
+    
+    ' Add new button
+    Set btn = ws.Buttons.Add(ws.Cells(rowNumber, colNumber).Left, _
+                             ws.Cells(rowNumber, colNumber).Top, _
+                             ws.Cells(rowNumber, colNumber).Width, _
+                             ws.Cells(rowNumber, colNumber).Height)
+    With btn
+        .Caption = "Send Email"
+        .OnAction = "ActionButton_Click"
+        .Name = "ActionBtn_" & rowNumber & "_" & statusValue
+    End With
+    Application.ScreenUpdating = True
+End Sub
+
+Sub ActionButton_Click()
+    ' Send an email based on the button clicked
+    Dim clickedButton As Button
+    Set clickedButton = ActiveSheet.Buttons(Application.Caller)
+    Dim buttonNameParts() As String
+    buttonNameParts = Split(clickedButton.Name, "_")
+    
+    ' Get row number and status from the button's name
+    Dim rowNumber As Long
+    Dim statusValue As String
+    rowNumber = CInt(buttonNameParts(1))
+    statusValue = buttonNameParts(2)
+
+    ' Determine action based on status
+    Select Case statusValue
+        Case "Expire"
+            SendEmail ActiveSheet.Cells(rowNumber, 2).Value, ActiveSheet.Cells(rowNumber, 3).Value, _
+                      "Your application status", "Hi " & ActiveSheet.Cells(rowNumber, 2).Value & "," & vbNewLine & "XXXXX"
+        Case "exam passed/waived"
+            SendEmail ActiveSheet.Cells(rowNumber, 2).Value, ActiveSheet.Cells(rowNumber, 3).Value, _
+                      "Eurex Template user", "Hi " & ActiveSheet.Cells(rowNumber, 2).Value & "," & vbNewLine & "can you please offer me a template user?"
+        Case "IT setup"
+            SendEmailWithImage ActiveSheet.Cells(rowNumber, 2).Value, ActiveSheet.Cells(rowNumber, 3).Value
+    End Select
+End Sub
+
+Sub SendEmail(FirstName As String, EmailAddress As String, Subject As String, Body As String)
+    ' Send an email with the given subject and body
+    Dim OutApp As Object
+    Dim OutMail As Object
+    Set OutApp = CreateObject("Outlook.Application")
+    Set OutMail = OutApp.CreateItem(0)
+    
+    On Error Resume Next
+    With OutMail
+        .To = EmailAddress
+        .CC = ""
+        .BCC = ""
+        .Subject = Subject
+        .HTMLBody = "<html><body><p>" & Replace(Body, vbNewLine, "<br>") & "</p></body></html>"
+        .Send   ' Or use .Display to review the email before sending
+    End With
+    On Error GoTo 0
+    
+    Set OutMail = Nothing
+    Set OutApp = Nothing
+End Sub
+
+Sub SendEmailWithImage(FirstName As String, EmailAddress As String)
+    ' Send an email with an image attachment
+    Dim OutApp As Object
+    Dim OutMail As Object
+    Set OutApp = CreateObject("Outlook.Application")
+    Set OutMail = OutApp.CreateItem(0)
+    
+    Dim imageFilePath As String
+    imageFilePath = "C:\Path\To\Image.jpg" ' Replace with the path to your image file
+    
+    On Error Resume Next
+    With OutMail
+        .To = EmailAddress
+        .CC = ""
+        .BCC = ""
+        .Subject = "IT Setup Required"
+        .HTMLBody = "<html><body><p>Hi " & FirstName & ",</p><p>Please see the attached image for details.</p></body></html>"
+        .Attachments.Add imageFilePath
+        .Send   ' Or use .Display to review the email before sending
+    End With
+    On Error GoTo 0
+    
+    Set OutMail = Nothing
+    Set OutApp = Nothing
+End Sub
