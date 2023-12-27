@@ -117,7 +117,7 @@ Sub ActionButton_Click()
 End Sub
 
 Sub SendEmail(FirstName As String, EmailAddress As String, Subject As String, Body As String)
-    ' 发送邮件
+    ' 使用给定的主题和内容准备邮件，但不直接发送
     Dim OutApp As Object
     Dim OutMail As Object
     Set OutApp = CreateObject("Outlook.Application")
@@ -130,7 +130,7 @@ Sub SendEmail(FirstName As String, EmailAddress As String, Subject As String, Bo
         .BCC = ""
         .Subject = Subject
         .HTMLBody = "<html><body><p>" & Replace(Body, vbNewLine, "<br>") & "</p></body></html>"
-        .Send   ' 或使用 .Display 来审查邮件
+        .Display   ' 显示邮件草稿，而不是直接发送
     End With
     On Error GoTo 0
     
@@ -139,7 +139,7 @@ Sub SendEmail(FirstName As String, EmailAddress As String, Subject As String, Bo
 End Sub
 
 Sub SendEmailWithImage(FirstName As String, EmailAddress As String)
-    ' 发送带图片的邮件
+    ' 准备带有图片附件的邮件，但不直接发送
     Dim OutApp As Object
     Dim OutMail As Object
     Set OutApp = CreateObject("Outlook.Application")
@@ -156,13 +156,15 @@ Sub SendEmailWithImage(FirstName As String, EmailAddress As String)
         .Subject = "IT Setup Required"
         .HTMLBody = "<html><body><p>Hi " & FirstName & ",</p><p>Please see the attached image for details.</p></body></html>"
         .Attachments.Add imageFilePath
-        .Send   ' 或使用 .Display 来审查邮件
+        .Display   ' 显示邮件草稿，而不是直接发送
     End With
     On Error GoTo 0
     
     Set OutMail = Nothing
     Set OutApp = Nothing
 End Sub
+
+
 
 Sub AddTriggerButton()
     ' 添加用于触发 CheckStatusAndAddButtons 的按钮
