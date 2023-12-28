@@ -221,3 +221,230 @@ Sub AddTriggerButton()
         .OnAction = "CheckStatusAndAddButtons"
     End With
 End Sub
+
+
+
+
+Sub SetUpDropdowns()
+    ' 在状态列添加下拉列表
+    Dim cell As Range
+    For Each cell In Range("D2:D100") ' 根据实际数据调整范围
+        With cell.Validation
+            .Delete
+            .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Operator:= _
+            xlBetween, Formula1:="application started,In process of DBG,Draft,Expire,exam passed/waived,IT setup,Admission,person ask if I need exam"
+            .IgnoreBlank = True
+            .InCellDropdown = True
+            .ShowInput = True
+            .ShowError = True
+        End With
+    Next cell
+
+    ' 添加用于触发 CheckStatusAndAddButtons 的按钮
+    AddTriggerButton
+End Sub
+
+Sub CheckStatusAndAddButtons()
+    ' 根据状态列的值添加按钮
+    Const statusCol As Integer = 4 ' 状态在第四列 (D)
+    Const actionCol As Integer = 7 ' 操作在第七列 (G)
+    Dim ws As Worksheet
+    Set ws = ActiveSheet
+    Dim lastRow As Long
+    lastRow = ws.Cells(ws.Rows.Count, statusCol).End(xlUp).Row
+    
+    Dim i As Long
+    For i = 2 To lastRow ' 假设数据从第二行开始
+        Dim statusValue As String
+        statusValue = ws.Cells(i, statusCol).Value
+        If statusValue = "Expire" Or statusValue = "exam passed/waived" Or statusValue = "IT setup" Then
+            AddActionButton ws, i, actionCol, statusValue
+        End If
+    Next i
+End Sub
+
+Sub AddActionButton(ws As Worksheet, rowNumber As Long, colNumber As Long, statusValue As String)
+    ' 在指定单元格旁添加按钮
+    Dim btn As Button
+    Application.ScreenUpdating = False
+    
+    ' 删除同一单元格中已存在的按钮，避免重复
+    Dim existingButton As Button
+    For Each existingButton In ws.Buttons
+        If Not Intersect(existingButton.TopLeftCell, ws.Cells(rowNumber, colNumber)) Is Nothing Then
+            existingButton.Delete
+        End If
+    Next existingButton
+    
+    ' 计算按钮的位置和尺寸
+    Dim left As Double, top As Double, width As Double, height As Double
+    With ws.Cells(rowNumber, colNumber)
+        left = .Left
+        top = .Top
+        width = .Width
+        height = .Height
+    End With
+    
+    ' 添加新按钮
+    Set btn = ws.Buttons.Add(left, top, width, height)
+    With btn
+        .Caption = "Send Email"
+        .OnAction = "ActionButton_Click"
+        .Name = "ActionBtn_" & rowNumber & "_" & statusValue
+    End With
+    Application.ScreenUpdating = True
+
+    ' 显示调试信息，确认按钮是否已被添加
+    MsgBox "Added button at Row: " & rowNumber & ", Column: " & colNumber & ", for Status: " & statusValue
+End Sub
+
+
+Sub ActionButton_Click()
+    ' 处理按钮点击事件
+    Dim clickedButton As Object
+    Dim clickedButtonName As Variant
+
+    clickedButtonName = Application.Caller
+
+    ' 检查 Application.Caller 是否返回了字符串
+    If Not VarType(clickedButtonName) = vbString Then
+        MsgBox "This macro was not called by a button.", vbExclamation, "Button Error"
+        Exit Sub
+    End If
+
+    ' 尝试获取工作表上的按钮
+    On Error Resume Next
+    Set clickedButton = ActiveSheet.Buttons(clickedButtonName)
+    If clickedButton Is Nothing Then
+        MsgBox "Button not found.", vbExclamation, "Button Error"
+        Exit Sub
+    End If
+    On Error GoTo 0
+
+    ' 从按钮名称获取行号和状态
+    Dim buttonNameParts() As String
+    buttonNameParts = Split(clickedButton.Name, "_")
+
+    Dim rowNumber As Long
+    Dim statusValue As String
+    rowNumber = CInt(buttonNameParts(1))
+    statusValue = buttonNameParts(2)
+
+    ' 根据状态确定操作
+    Select Case statusValue
+        Case "Expire"
+            SendEmail ActiveSheet.Cells(rowNumber, 2).Value, ActiveSheet.Cells(rowNumber, 3).Value, _
+                      "Your application status", "Hi " & FirstName & ",<br><br>" & _
+                "I noticed you probably didn't take actions after receiving a link from Eurex, it probably has expired. " & _
+                "Could you please check if it has expired? If so, please start a new ARP request for Eurex.<br><br>" & _
+                "Thank you!<br><br>" & _
+                "Best regards,<br>" & _
+                "Jia"
+        Case "exam passed/waived"
+            SendEmail ActiveSheet.Cells(rowNumber, 2).Value, ActiveSheet.Cells(rowNumber, 3).Value, _
+                      "Eurex Template user", "Hi " & ActiveSheet.Cells(rowNumber, 2).Value & "," & vbNewLine & "can you please offer me a template user?"
+        Case "IT setup"
+            SendEmailWithImage ActiveSheet.Cells(rowNumber, 2).Value, ActiveSheet.Cells(rowNumber, 3).Value
+    End Select
+End Sub
+
+Sub SendEmail(FirstName As String, EmailAddress As String, Subject As String, Body As String)
+    ' 使用给定的主题和内容准备邮件，但不直接发送
+    Dim OutApp As Object
+    Dim OutMail As Object
+    Set OutApp = CreateObject("Outlook.Application")
+    Set OutMail = OutApp.CreateItem(0)
+    
+    On Error Resume Next
+    With OutMail
+        .To = EmailAddress
+        .CC = ""
+        .BCC = ""
+        .Subject = Subject
+        .HTMLBody = "<html><body><p>" & Replace(Body, vbNewLine, "<br>") & "</p></body></html>"
+        .Display   ' 显示邮件草稿，而不是直接发送
+    End With
+    On Error GoTo 0
+    
+    Set OutMail = Nothing
+    Set OutApp = Nothing
+End Sub
+
+Sub SendEmailWithImage(FirstName As String, EmailAddress As String)
+    ' 准备带有图片附件的邮件，但不直接发送
+    Dim OutApp As Object
+    Dim OutMail As Object
+    Set OutApp = CreateObject("Outlook.Application")
+    Set OutMail = OutApp.CreateItem(0)
+    
+    Dim imageFilePath As String
+    imageFilePath = "C:\Path\To\Image.jpg" ' 替换为图片文件的路径
+    
+    On Error Resume Next
+    With OutMail
+        .To = EmailAddress
+        .CC = ""
+        .BCC = ""
+        .Subject = "IT Setup Required"
+        .HTMLBody = "<html><body><p>Hi " & FirstName & ",</p><p>Please see the attached image for details.</p></body></html>"
+        .Attachments.Add imageFilePath
+        .Display   ' 显示邮件草稿，而不是直接发送
+    End With
+    On Error GoTo 0
+    
+    Set OutMail = Nothing
+    Set OutApp = Nothing
+End Sub
+
+Sub SendEmailWithImage(FirstName As String, EmailAddress As String)
+    ' 发送带有内联图片的邮件
+    Dim OutApp As Object
+    Dim OutMail As Object
+    Set OutApp = CreateObject("Outlook.Application")
+    Set OutMail = OutApp.CreateItem(0)
+
+    Dim imageFilePath As String
+    imageFilePath = "C:\Path\To\Image.jpg" ' 替换为实际图片文件的路径
+
+    On Error Resume Next
+    With OutMail
+        .To = EmailAddress
+        .Subject = "IT Setup Required"
+        
+        ' HTML正文，使用<img>标签引用图片
+        .HTMLBody = "<html><body><p>Hi " & FirstName & ",</p><p>Please see the image below for details:</p>" & _
+                    "<img src='cid:MyImage' width='400'><br>" & _
+                    "</body></html>"
+
+        ' 添加图片作为隐藏附件，并赋予一个内容ID (CID)
+        If Dir(imageFilePath) <> "" Then
+            With .Attachments.Add(imageFilePath, 1, 0)
+                .PropertyAccessor.SetProperty "http://schemas.microsoft.com/mapi/proptag/0x3712001E", "MyImage"
+            End With
+        Else
+            MsgBox "Image file not found: " & imageFilePath
+            Exit Sub
+        End If
+
+        .Display   ' 显示邮件草稿，而不是直接发送
+    End With
+
+    If Err.Number <> 0 Then
+        MsgBox "An error occurred: " & Err.Description
+    End If
+
+    On Error GoTo 0
+    Set OutMail = Nothing
+    Set OutApp = Nothing
+End Sub
+
+
+Sub AddTriggerButton()
+    ' 添加用于触发 CheckStatusAndAddButtons 的按钮
+    Dim triggerBtn As Button
+    Set triggerBtn = ActiveSheet.Buttons.Add(100, 10, 100, 30)
+    With triggerBtn
+        .Caption = "Update Buttons"
+        .OnAction = "CheckStatusAndAddButtons"
+    End With
+End Sub
