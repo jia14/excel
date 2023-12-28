@@ -1,3 +1,59 @@
+Sub SendEmailWithImage(rowNumber As Long)
+    ' 发送带有内联图片的邮件
+    Dim OutApp As Object
+    Dim OutMail As Object
+    Set OutApp = CreateObject("Outlook.Application")
+    Set OutMail = OutApp.CreateItem(0)
+
+    ' 默认图片路径
+    Dim imageFilePath As String
+    imageFilePath = "C:\Path\To\Image.jpg" ' 替换为实际图片文件的路径
+
+    ' 从工作表获取邮箱地址
+    Dim EmailAddress As String
+    EmailAddress = ActiveSheet.Cells(rowNumber, 3).Value ' 假设邮箱地址在第三列
+
+    ' 构建邮件主题
+    Dim firstName As String, lastName As String
+    firstName = ActiveSheet.Cells(rowNumber, 2).Value ' First Name 在第二列
+    lastName = ActiveSheet.Cells(rowNumber, 1).Value ' Last Name 在第一列
+    Dim emailSubject As String
+    emailSubject = "New GUI User: " & firstName & " " & lastName
+
+    ' 构建邮件正文
+    ' ... 邮件正文的代码 ...
+
+    On Error Resume Next
+    With OutMail
+        .To = EmailAddress
+        .Subject = emailSubject
+        .HTMLBody = '... 邮件正文 ...'
+
+        ' 添加图片作为隐藏附件，并赋予一个内容ID (CID)
+        If Dir(imageFilePath) <> "" Then
+            With .Attachments.Add(imageFilePath, 1, 0)
+                .PropertyAccessor.SetProperty "http://schemas.microsoft.com/mapi/proptag/0x3712001E", "MyImage"
+            End With
+        Else
+            MsgBox "Image file not found: " & imageFilePath
+            Exit Sub
+        End If
+
+        .Display   ' 显示邮件草稿，而不是直接发送
+    End With
+
+    If Err.Number <> 0 Then
+        MsgBox "An error occurred: " & Err.Description
+    End If
+
+    On Error GoTo 0
+    Set OutMail = Nothing
+    Set OutApp = Nothing
+End Sub
+
+
+
+
 Sub SendEmailWithImage(rowNumber As Long, EmailAddress As String, imageFilePath As String)
     ' 发送带有特定格式邮件和内联图片的邮件
     Dim OutApp As Object
