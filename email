@@ -169,6 +169,47 @@ Sub SendEmailWithImage(FirstName As String, EmailAddress As String)
     Set OutApp = Nothing
 End Sub
 
+Sub SendEmailWithImage(FirstName As String, EmailAddress As String)
+    ' 发送带有内联图片的邮件
+    Dim OutApp As Object
+    Dim OutMail As Object
+    Set OutApp = CreateObject("Outlook.Application")
+    Set OutMail = OutApp.CreateItem(0)
+
+    Dim imageFilePath As String
+    imageFilePath = "C:\Path\To\Image.jpg" ' 替换为实际图片文件的路径
+
+    On Error Resume Next
+    With OutMail
+        .To = EmailAddress
+        .Subject = "IT Setup Required"
+        
+        ' HTML正文，使用<img>标签引用图片
+        .HTMLBody = "<html><body><p>Hi " & FirstName & ",</p><p>Please see the image below for details:</p>" & _
+                    "<img src='cid:MyImage' width='400'><br>" & _
+                    "</body></html>"
+
+        ' 添加图片作为隐藏附件，并赋予一个内容ID (CID)
+        If Dir(imageFilePath) <> "" Then
+            With .Attachments.Add(imageFilePath, 1, 0)
+                .PropertyAccessor.SetProperty "http://schemas.microsoft.com/mapi/proptag/0x3712001E", "MyImage"
+            End With
+        Else
+            MsgBox "Image file not found: " & imageFilePath
+            Exit Sub
+        End If
+
+        .Display   ' 显示邮件草稿，而不是直接发送
+    End With
+
+    If Err.Number <> 0 Then
+        MsgBox "An error occurred: " & Err.Description
+    End If
+
+    On Error GoTo 0
+    Set OutMail = Nothing
+    Set OutApp = Nothing
+End Sub
 
 
 Sub AddTriggerButton()
