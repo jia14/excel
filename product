@@ -34,12 +34,13 @@ for name, group in grouped:
     if len(group) < 2:
         continue
 
-    # 应用预处理
-    group_features = preprocessor.fit_transform(group)
+   # 对“size total”列计算欧氏距离
+    distance_matrix = euclidean_distances(group[['size total']].fillna(0))
 
-    # 计算余弦相似度
-    similarity_matrix = cosine_similarity(group_features)
-    np.fill_diagonal(similarity_matrix, np.nan)
+   # 将距离转换为相似度（距离越小，相似度越高）
+   similarity_matrix = 1 / (1 + distance_matrix)
+   np.fill_diagonal(similarity_matrix, np.nan)
+
 
     # 扁平化相似度矩阵并排序
     flattened_similarity_matrix = similarity_matrix.flatten()
