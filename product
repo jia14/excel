@@ -1,0 +1,46 @@
+import pandas as pd
+import numpy as np
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.compose import ColumnTransformer
+
+# 加载数据
+df = pd.read_csv('your_data.csv')
+df_last_2000 = df.tail(2000)  # 选取最后2000条数据
+df_last_2000['strike time'] = pd.to_datetime(df_last_2000['strike time'])  # 确保时间格式正确
+
+# 按照“strike time”分组
+grouped = df_last_2000.groupby(pd.Grouper(key='strike time', freq='W'))
+
+# 定义预处理步骤
+categorical_features = ['Company']  # 假设公司名称列名为 'Company'
+numeric_features = ['coupon']
+
+preprocessor = ColumnTransformer(
+    transformers=[
+        ('num', StandardScaler(), numeric_features),
+        ('cat', OneHotEncoder(), categorical_features)
+    ])
+
+# 对每个分组进行处理和相似度计算
+most_similar_combinations = {}
+
+for name, group in grouped:
+    # 只处理有足够数据的组
+    if len(group) < 2:
+        continue
+
+    # 应用预处理
+    group_features = preprocessor.fit_transform(group)
+
+    # 计算余弦相似度
+    similarity_matrix = cosine_similarity(group_features)
+    np.fill_diagonal(similarity_matrix, np.nan)
+
+    # 找出相似度最高的一对组合
+    most_similar_pair_index = np.unravel_index(np.nanargmax(similarity_matrix), similarity_matrix.shape)
+    most_similar_combinations[name] = group.iloc[list(most_similar_pair_index)].index.tolist()
+
+# 展示每周最相似的一对组合
+for week, pair_indices in most_similar_combinations.items():
+    print(f"Week: {week}, Most Similar Pair Indices: {pair_indices}")
