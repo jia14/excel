@@ -8,6 +8,7 @@ from sklearn.compose import ColumnTransformer
 df = pd.read_csv('your_data.csv')
 df_last_2000 = df.tail(2000)  # 选取最后2000条数据
 df_last_2000['strike time'] = pd.to_datetime(df_last_2000['strike time'])  # 转换日期格式
+df_last_2000['Total Size'] = pd.to_numeric(df_last_2000['Total Size'], errors='coerce').fillna(0)
 
 # 将公司名称列合并为一个字符串
 company_cols = ['Company1', 'Company2', 'Company3', 'Company4', 'Company5']  # 替换为您的实际列名
