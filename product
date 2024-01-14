@@ -35,6 +35,7 @@ for name, group in grouped:
         continue
 
    # 对“size total”列计算欧氏距离
+    group['size total'] = pd.to_numeric(group['size total'], errors='coerce').fillna(0)
     distance_matrix = euclidean_distances(group[['size total']].fillna(0))
 
    # 将距离转换为相似度（距离越小，相似度越高）
